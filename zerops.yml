@@ -1,31 +1,20 @@
 zerops:
-  - setup: gleam
+  - setup: app 
     build:
-      os: alpine
-      base: go@1
-      envVariables:
-        MIX_ENV: prod
+      base: rust@latest
       prepareCommands:
         - apk update
-        - apk add erlang elixir
-        - apk add gleam
+        - apk add gleam --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
         - apk add rebar3
-        - mix local.hex --force
-        - mix local.rebar --force
       buildCommands:
-        - mix deps.get
-        - mix compile
-        - mix release
-      deployFiles:
-        - _build/prod/rel/app/~
+        - gleam export gleam-prod
+      deployFiles: /
     run:
-      os: alpine
-      base: go@1
+      base: rust@latest
       prepareCommands:
         - apk update
-        - apk add libstdc++
-        - gleam add mist gleam_http gleam_erlang
+        - apk add erlang
       ports:
         - port: 8080
           httpSupport: true
-      start: gleam run
+      start: ./gleam-prod/entrypoint.sh run
