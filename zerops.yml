@@ -24,7 +24,8 @@ zerops:
       prepareCommands:
         - apk update
         - apk add libstdc++
+        - gleam add mist gleam_http gleam_erlang
       ports:
         - port: 8080
           httpSupport: true
-      start: bin/app start
+      start: gleam run
