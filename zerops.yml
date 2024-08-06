@@ -1,5 +1,5 @@
 zerops:
-  - setup: app
+  - setup: gleam
     build:
       os: alpine
       base: go@1
