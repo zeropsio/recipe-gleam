@@ -1,22 +1,8 @@
-# recipe-gleam
+# Zerops x Gleam
+
+A basic example of mist web server on zerops
 
 ![gleam](https://github.com/zeropsio/recipe-shared-assets/blob/main/covers/svg/cover-gleam.svg)
-
-[![Package Version](https://img.shields.io/hexpm/v/my_web_app)](https://hex.pm/packages/my_web_app)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/my_web_app/)
-
-```sh
-gleam add my_web_app@1
-```
-```gleam
-import my_web_app
-
-pub fn main() {
-  // TODO: An example of the project in use
-}
-```
-
-Further documentation can be found at <https://hexdocs.pm/my_web_app>.
 
 ## Development
 
