@@ -1,6 +1,7 @@
 # Zerops x Gleam
 
-A basic example of mist web server on zerops
+A basic example of a Mist web server on Zerops.
+
 
 ![gleam](https://github.com/zeropsio/recipe-shared-assets/blob/main/covers/svg/cover-gleam.svg)
 
