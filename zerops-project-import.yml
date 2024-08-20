@@ -1,0 +1,6 @@
+project:
+  name: recipe-gleam
+services:
+  - hostname: app
+    type: rust@1
+    enableSubdomainAccess: true
