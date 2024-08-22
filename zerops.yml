@@ -7,8 +7,8 @@ zerops:
         - apk add gleam --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community
         - apk add rebar3
       buildCommands:
-        - gleam export gleam-prod
-      deployFiles: /
+        - gleam export erlang-shipment
+      deployFiles: build/~erlang-shipment
     run:
       base: rust@latest
       prepareCommands:
@@ -17,4 +17,4 @@ zerops:
       ports:
         - port: 8080
           httpSupport: true
-      start: ./gleam-prod/entrypoint.sh run
+      start: ./erlang-shipment/entrypoint.sh run
