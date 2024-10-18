@@ -4,4 +4,4 @@ services:
   - hostname: app
     type: rust@1
     enableSubdomainAccess: true
-    buildFromGit: https://github.com/zeropsio/recipe-nuxt-static
+    buildFromGit: https://github.com/zeropsio/recipe-gleam
