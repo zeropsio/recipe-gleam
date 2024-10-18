@@ -2,6 +2,6 @@ project:
   name: recipe-gleam
 services:
   - hostname: app
-    type: rust@1
+    type: gleam@1.5
     enableSubdomainAccess: true
     buildFromGit: https://github.com/zeropsio/recipe-gleam
