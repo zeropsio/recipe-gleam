@@ -1,13 +1,16 @@
-import envoy
+import glenvy/dotenv
+import glenvy/env
 import gleam/pgo
 import gleam/result
 import gleam/io
 
 pub fn read_connection_uri() -> Result(pgo.Connection, Nil) {
   io.println("Attempting to connect to database...")
-  
+    
+    let _ = dotenv.load()
+  // Setup glenvy below
   use database_url <- result.try({
-    case envoy.get("DATABASE_URL") {
+    case env.get_string("DATABASE_URL") {
       Ok(url) -> {
         io.println("Found DATABASE_URL configuration")
         Ok(url)
