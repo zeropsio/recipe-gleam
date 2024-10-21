@@ -8,7 +8,7 @@ zerops:
     run:
       base: gleam@1.5
       envVariables:
-        DATABASE_URL: postgresql://${db_user}:${db_password}@${db_hostname}:${db_port}
+        DATABASE_URL: postgresql://${db_user}:${db_password}@${db_hostname}:${db_port}/${db_dbName}
       ports:
         - port: 3000
           httpSupport: true
