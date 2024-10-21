@@ -1,3 +1,4 @@
+import gleam/result
 import gleam/string
 import gleam/pgo
 import gleam/io
@@ -33,10 +34,8 @@ pub fn table(conn: pgo.Connection) -> Result(Nil, String) {
 pub fn add_entry_and_get_count(conn: pgo.Connection) -> Result(Int, String) {
   io.println("Adding entry and getting count")
   
-  // First, ensure the table exists
   case table(conn) {
     Ok(_) -> {
-      // Table exists or was created, proceed with insert
       let insert_query = "INSERT INTO entries (created_at) VALUES (NOW())"
       io.println("Executing insert query: " <> insert_query)
       case pgo.execute(
@@ -70,9 +69,16 @@ fn get_count(conn: pgo.Connection) -> Result(Int, String) {
     query: count_query,
     on: conn,
     with: [],
-    expecting: dynamic.int
+    expecting: fn(dyn) {
+      dynamic.tuple2(
+        dynamic.int,
+        dynamic.dynamic
+      )(dyn)
+      |> result.map(fn(tuple) { tuple.0 })
+    }
   ) {
     Ok(result) -> {
+      io.println("Raw result: " <> string.inspect(result))
       case result.rows {
         [count] -> {
           io.println("Count retrieved successfully: " <> int.to_string(count))
