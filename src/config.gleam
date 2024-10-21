@@ -1,44 +1,31 @@
+import gleam/pgo
+import gleam/io
 import glenvy/dotenv
 import glenvy/env
-import gleam/pgo
-import gleam/result
-import gleam/io
 
-pub fn read_connection_uri() -> Result(pgo.Connection, Nil) {
-  io.println("Attempting to connect to database...")
-    
-    let _ = dotenv.load()
-  // Setup glenvy below
-  use database_url <- result.try({
-    case env.get_string("DATABASE_URL") {
-      Ok(url) -> {
-        io.println("Found DATABASE_URL configuration")
-        Ok(url)
-      }
-      Error(_) -> {
-        io.println("Failed to get DATABASE_URL")
-        Error(Nil)
+pub fn get_db_connection() -> Result(pgo.Connection, Nil) {
+  case dotenv.load() {
+    Ok(_) -> io.println("Environment variables loaded successfully")
+    Error(_) -> io.println("Warning: Could not load .env file")
+  }
+  
+  case env.get_string("DATABASE_URL") {
+    Ok(database_url) -> {
+      case pgo.url_config(database_url) {
+        Ok(config) -> {
+          let connection = pgo.connect(config)
+          io.println("Successfully connected to database! ✨")
+          Ok(connection)
+        }
+        Error(_) -> {
+          io.println("Failed to parse database configuration")
+          Error(Nil)
+        }
       }
     }
-  })
-
-  use config <- result.try({
-    case pgo.url_config(database_url) {
-      Ok(cfg) -> {
-        io.println("Database configuration parsed successfully")
-        Ok(cfg)
-      }
-      Error(_) -> {
-        io.println("Failed to parse database configuration")
-        Error(Nil)
-      }
-    }
-  })
-
-  case pgo.connect(config) {
-    connection -> {
-      io.println("Successfully connected to database! ✨")
-      Ok(connection)
+    Error(_) -> {
+      io.println("Failed to get DATABASE_URL from environment")
+      Error(Nil)
     }
   }
 }

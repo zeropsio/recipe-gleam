@@ -3,11 +3,13 @@ zerops:
     build:
       base: gleam@1.5
       buildCommands:
-        - gleam export erlang-shipment
-      deployFiles: build/~erlang-shipment
+        - gleam build
+      deployFiles: /
     run:
       base: gleam@1.5
+      envVariables:
+        DATABASE_URL: postgresql://${db_user}:${db_password}@${db_hostname}:${db_port}
       ports:
-        - port: 8080
+        - port: 3000
           httpSupport: true
-      start: ./erlang-shipment/entrypoint.sh run
+      start: gleam run
