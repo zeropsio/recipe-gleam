@@ -1,3 +1,4 @@
+import gleam/list
 import mist
 import gleam/erlang/process
 import gleam/bytes_builder
@@ -48,7 +49,7 @@ pub fn main() {
 fn web_service(_request) {
   io.println("Received a new request")
   // Check database connection using config
-  let #(db_status, entry_count, latest_uuid) = case config.get_db_connection() {
+  let #(db_status, entry_count, latest_uuid, entries) = case config.get_db_connection() {
     Ok(connection) -> {
       io.println("Database connection successful")
       // Use the database module to add entry and get count
@@ -56,11 +57,15 @@ fn web_service(_request) {
         Ok(#(uuid, count)) -> {
           io.println("Successfully added entry with UUID: " <> uuid)
           io.println("Total count: " <> int.to_string(count))
-          #("Database connection successful! ✅", count, uuid)
+          
+          case database.get_all_entries(connection) {
+            Ok(entries) -> #("Database connection successful! ✅", count, uuid, entries)
+            Error(_) -> #("Database connection successful! ✅", count, uuid, [])
+          }
         }
         Error(err) -> {
           io.println("Database operation failed: " <> err)
-          #("Database operation failed: " <> err, 0, "")
+          #("Database operation failed: " <> err, 0, "", [])
         }
       }
     }
@@ -69,7 +74,7 @@ fn web_service(_request) {
         Nil -> "Unknown database connection error"
       }
       io.println(error_message)
-      #(error_message <> " ❌", 0, "")
+      #(error_message <> " ❌", 0, "", [])
     }
   }
 
@@ -112,6 +117,40 @@ fn web_service(_request) {
           border-radius: 4px;
           margin: 10px 0;
         }
+        .latest-entry {
+          border: 2px solid #4CAF50;
+          padding: 10px;
+          margin: 20px 0;
+          border-radius: 4px;
+        }
+        .entries-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          background-color: #fff;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .entries-table th,
+        .entries-table td {
+          padding: 12px;
+          text-align: left;
+          border-bottom: 1px solid #ddd;
+        }
+        .entries-table th {
+          background-color: #f8f9fa;
+          font-weight: bold;
+        }
+        .entries-table tr:hover {
+          background-color: #f5f5f5;
+        }
+        .new-entry {
+          background-color: #e8f5e9;
+          animation: highlight 2s ease-out;
+        }
+        @keyframes highlight {
+          0% { background-color: #b9f6ca; }
+          100% { background-color: #e8f5e9; }
+        }
       </style>
     </head>
     <body>
@@ -122,13 +161,49 @@ fn web_service(_request) {
       } <> "\">
         " <> db_status <> "
       </div>
-      " <> case string.length(latest_uuid) > 0 {
-        True -> "<div class=\"uuid\">Latest UUID: " <> latest_uuid <> "</div>"
-        False -> ""
-      } <> "
+
       <div class=\"count\">
         Total entries: " <> int.to_string(entry_count) <> "
       </div>
+
+      " <> case string.length(latest_uuid) > 0 {
+        True -> "
+          <div class=\"latest-entry\">
+            <h3>Latest Entry</h3>
+            <div class=\"uuid\">" <> latest_uuid <> "</div>
+          </div>"
+        False -> ""
+      } <> "
+
+      " <> case entries {
+        [] -> ""
+        entries -> "
+          <h3>Recent Entries</h3>
+          <table class=\"entries-table\">
+            <thead>
+              <tr>
+                <th>UUID</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              " <> string.join(
+                list.map(entries, fn(entry) {
+                  let #(uuid, timestamp) = entry
+                  "<tr class=\"" <> case uuid == latest_uuid {
+                    True -> "new-entry"
+                    False -> ""
+                  } <> "\">
+                    <td class=\"uuid\">" <> uuid <> "</td>
+                    <td>" <> timestamp <> "</td>
+                  </tr>"
+                }),
+                ""
+              ) <> "
+            </tbody>
+          </table>"
+      } <> "
+
       <p>This is a simple, basic Gleam mist application running on Zerops.io, each request adds an entry with a UUID to the PostgreSQL database and returns a count.</p>
       <p>See the <a href='https://github.com/zeropsio/recipe-gleam' target='_blank'> source repository </a> for more information.</p>
     </body>
