@@ -171,11 +171,7 @@ fn web_service(_request) {
           <div class=\"latest-entry\">
             <h3>Latest Entry</h3>
             <div class=\"uuid\">" <> latest_uuid <> "</div>
-          </div>"
-        False -> ""
-      } <> "
-
-      " <> case entries {
+                  " <> case entries {
         [] -> ""
         entries -> "
           <h3>Recent Entries</h3>
@@ -202,6 +198,9 @@ fn web_service(_request) {
               ) <> "
             </tbody>
           </table>"
+      } <> "
+          </div>"
+        False -> ""
       } <> "
 
       <p>This is a simple, basic Gleam mist application running on Zerops.io, each request adds an entry with a UUID to the PostgreSQL database and returns a count.</p>
