@@ -34,13 +34,13 @@ pub fn add_entry_and_get_count(conn: pgo.Connection) -> Result(#(String, Int), S
   }
 }
 
-pub fn get_all_entries(conn: pgo.Connection) -> Result(List(#(String, String)), String) {
+pub fn get_latest_entry(conn: pgo.Connection) -> Result(#(String, String), String) {
   let query = "
-    SELECT uuid, created_at::text 
-    FROM entries 
-    ORDER BY created_at DESC 
-    LIMIT 5"
-  
+    SELECT uuid, created_at::text
+    FROM entries
+    ORDER BY created_at DESC
+    LIMIT 1"
+
   case pgo.execute(
     query: query,
     on: conn,
@@ -55,10 +55,15 @@ pub fn get_all_entries(conn: pgo.Connection) -> Result(List(#(String, String)), 
       }
     }
   ) {
-    Ok(result) -> Ok(result.rows)
+    Ok(result) -> {
+      case result.rows {
+        [entry, ..] -> Ok(entry)
+        [] -> Error("No entries found")
+      }
+    }
     Error(err) -> {
       let error_message = query_error_to_string(err)
-      Error("Failed to get entries: " <> error_message)
+      Error("Failed to get latest entry: " <> error_message)
     }
   }
 }
