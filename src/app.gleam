@@ -1,68 +1,83 @@
 import gleam/http.{Get}
-import gleam/http/response.{type Response}
-import gleam/http/request.{type Request}
-import gleam/bytes_builder
-import gleam/io
 import gleam/json
+import gleam/io
+import wisp
 import gleam/pgo
-import gleam/erlang/process
 import database
 import config
-import mist.{type Connection, type ResponseData}
+import mist
+import gleam/erlang/process
+
+pub type Request = wisp.Request
+
+pub type Response = wisp.Response
 
 pub fn main() {
-  case config.get_db_connection() {
-    Ok(db) -> {
-      let assert Ok(_) =
-        mist.new(my_service(db))
-        |> mist.port(3000)
-        |> mist.start_http
+  wisp.configure_logger()
+  
+  let assert Ok(conn) = config.get_db_connection()
+  
+  let app = wisp.init()
+    |> wisp.handle_request(fn(req) { handle_request(req, conn) })
+  
+  let secret_key_base = wisp.random_string(64)
+  
+  let assert Ok(_) =
+    mist.handler(app, secret_key_base)
+    |> mist.new
+    |> mist.port(3000)
+    |> mist.start_http
+  
+  io.println("Starting server on port 3000")
+  process.sleep_forever()
+}
 
-      io.println("Server started on port 3000")
-      process.sleep_forever()
-    }
-    Error(Nil) -> {
-      io.println("Failed to initialize database connection")
-      process.sleep_forever()
-    }
+pub fn handle_request(req: Request, conn: pgo.Connection) -> Response {
+  case req.method, wisp.path_segments(req) {
+    Get, [] -> handle_root(conn)
+    Get, ["status"] -> handle_status()
+    _, _ -> wisp.not_found()
   }
 }
 
-fn my_service(
-  db: pgo.Connection,
-) -> fn(Request(Connection)) -> Response(ResponseData) {
-  fn(request: Request(Connection)) -> Response(ResponseData) {
-    case request.method {
-      Get -> handle_get_request(db)
-      _ -> json_response(404, json.object([
-        #("error", json.string("Method not allowed"))
-      ]))
-    }
-  }
-}
-
-fn handle_get_request(db: pgo.Connection) -> Response(ResponseData) {
-  case database.add_entry_and_get_count(db) {
+fn handle_root(conn: pgo.Connection) -> Response {
+  case database.add_entry_and_get_count(conn) {
     Ok(#(uuid, count)) -> {
-      let response_body = json.object([
-        #("uuid", json.string(uuid)),
-        #("count", json.int(count)),
-      ])
-      json_response(200, response_body)
+      case database.get_latest_entry(conn) {
+        Ok(#(latest_uuid, timestamp)) -> {
+          let body = json.object([
+            #("message", json.string("This is a simple, basic Gleam / Wisp application running on Zerops.io, each request adds an entry to the PostgreSQL database and returns a count.")),
+            #("newEntry", json.string(uuid)),
+            #("latestEntry", json.object([
+              #("uuid", json.string(latest_uuid)),
+              #("timestamp", json.string(timestamp))
+            ])),
+            #("count", json.int(count))
+          ])
+          wisp.json_response(json.to_string_builder(body), 201)
+        }
+        Error(err) -> wisp.json_response(
+          json.to_string_builder(json.object([
+            #("error", json.string(err))
+          ])),
+          500
+        )
+      }
     }
-    Error(_) -> {
-      json_response(500, json.object([
-        #("error", json.string("Database error"))
-      ]))
-    }
+    Error(err) -> wisp.json_response(
+      json.to_string_builder(json.object([
+        #("error", json.string(err))
+      ])),
+      500
+    )
   }
 }
 
-fn json_response(
-  status: Int,
-  body: json.Json,
-) -> Response(ResponseData) {
-  response.new(status)
-  |> response.set_header("content-type", "application/json")
-  |> response.set_body(bytes_builder.from_string(json.to_string(body)))
+fn handle_status() -> Response {
+  wisp.json_response(
+    json.to_string_builder(json.object([
+      #("status", json.string("UP"))
+    ])),
+    200
+  )
 }
