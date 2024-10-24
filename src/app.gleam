@@ -10,17 +10,13 @@ import mist
 import gleam/erlang/process
 
 pub fn main() {
-  // Configure logging
   wisp.configure_logger()
   
   let assert Ok(conn) = config.get_db_connection()
   
-  // Generate a secure key for the server
   let secret_key_base = wisp.random_string(64)
   
-  // Create and start the server
   let assert Ok(_) =
-    // Create handler function that captures the database connection
     {fn(req) { handle_request(req, conn) }}
     |> wisp_mist.handler(secret_key_base)
     |> mist.new
