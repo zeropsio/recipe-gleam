@@ -4,7 +4,8 @@ zerops:
       base: gleam@1.5
       buildCommands:
         - gleam build
-      deployFiles: /
+        - gleam export erlang-shipment
+      deployFiles: build/erlang-shipment/~
     run:
       base: gleam@1.5
       envVariables:
@@ -12,4 +13,4 @@ zerops:
       ports:
         - port: 3000
           httpSupport: true
-      start: gleam run
+      start: ./entrypoint.sh run
