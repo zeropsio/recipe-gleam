@@ -19,6 +19,7 @@ jobs:
       with:
         otp-version: '25'
         gleam-version: '0.34.1'
+        rebar3-version: '3.22.1'
 
     - name: Cache dependencies
       uses: actions/cache@v3
