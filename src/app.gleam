@@ -4,8 +4,8 @@ import gleam/io
 import wisp.{type Request, type Response}
 import gleam/pgo
 import gleam/erlang/process
-import database
-import config
+import db/database
+import db/config
 import gleam/result
 import mist
 import wisp/wisp_mist
