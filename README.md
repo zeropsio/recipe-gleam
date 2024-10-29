@@ -1,5 +1,5 @@
 # Zerops x Gleam
-This is the most bare-bones example of Gleam app running on [Zerops](https://zerops.io) — as few libraries as possible, just a simple endpoint with connnect, read and write to a Zerops PostgreSQL database.
+This is the most bare-bones example of Gleam running on [Zerops](https://zerops.io) — as few libraries as possible, just a simple endpoint with connnect, read and write to a Zerops PostgreSQL database.
 
 ![gleam](https://github.com/zeropsio/recipe-shared-assets/blob/main/covers/svg/cover-gleam.svg)
 
@@ -13,7 +13,7 @@ You can either click the deploy button to deploy directly on Zerops, or manually
 <br/>
 
 ## Recipe features
-- Gleam web application running on a load balanced **Zerops Gleam** service
+- **Wisp** + **Mist** app running on a load balanced **Zerops Gleam** service
 - Zerops **PostgreSQL 16** service as database
 - Built with `wisp` and `mist` for HTTP server functionality
 - Health check endpoint at `/status`
