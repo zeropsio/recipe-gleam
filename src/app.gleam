@@ -1,84 +1,151 @@
 import gleam/http.{Get}
 import gleam/json
 import gleam/io
-import wisp.{type Request, type Response, not_found}
-import wisp/wisp_mist
+import wisp.{type Request, type Response}
 import gleam/pgo
+import gleam/erlang/process
 import database
 import config
+import gleam/result
 import mist
-import gleam/erlang/process
+import wisp/wisp_mist
+
+pub type AppError {
+  DatabaseError(String)
+  ConfigError(String)
+  ServerError(String)
+}
+
+pub type ApiResponse(a) {
+  ApiResponse(
+    data: a,
+    status: Int,
+  )
+}
+
+pub type RootData {
+  RootData(
+    message: String,
+    new_entry: String,
+    latest_entry: LatestEntry,
+    count: Int,
+  )
+}
+
+pub type LatestEntry {
+  LatestEntry(
+    uuid: String,
+    timestamp: String,
+  )
+}
 
 pub fn main() {
   wisp.configure_logger()
-  
-  let assert Ok(conn) = config.get_db_connection()
-  
   let secret_key_base = wisp.random_string(64)
+
+  use db_conn <- result.map(setup_database())
   
+  let handler = fn(req) { handle_request(req, db_conn) }
+
   let assert Ok(_) =
-    {fn(req) { handle_request(req, conn) }}
+    handler
     |> wisp_mist.handler(secret_key_base)
     |> mist.new
     |> mist.port(3000)
     |> mist.start_http
-    
-  io.println("Starting server on port 3000")
+
   process.sleep_forever()
+}
+
+fn setup_database() -> Result(pgo.Connection, AppError) {
+  use db_conn <- result.try(
+    config.get_db_connection()
+    |> result.map_error(fn(_) { ConfigError("Database connection failed") })
+  )
+
+  io.println("✓ Server initialized with database connection")
+  Ok(db_conn)
 }
 
 pub fn handle_request(req: Request, conn: pgo.Connection) -> Response {
   case req.method, wisp.path_segments(req) {
     Get, [] -> handle_root(conn)
     Get, ["status"] -> handle_status()
-    _, _ -> not_found()
+    _, _ -> wisp.not_found()
   }
 }
 
 fn handle_root(conn: pgo.Connection) -> Response {
-  case database.add_entry_and_get_count(conn) {
-    Ok(#(uuid, count)) -> {
-      case database.get_latest_entry(conn) {
-        Ok(#(latest_uuid, timestamp)) -> {
-          let body = json.object([
-            #("message", json.string("This is a simple, basic Gleam / Wisp application running on Zerops.io, each request adds an entry to the PostgreSQL database and returns a count.")),
-            #("newEntry", json.string(uuid)),
-            #("latestEntry", json.object([
-              #("uuid", json.string(latest_uuid)),
-              #("timestamp", json.string(timestamp))
-            ])),
-            #("count", json.int(count))
-          ])
-          
-          wisp.json_response(
-            json.to_string_builder(body),
-            201
-          )
-        }
-        Error(err) -> 
-          wisp.json_response(
-            json.to_string_builder(json.object([
-              #("error", json.string(err))
-            ])),
-            500
-          )
-      }
-    }
-    Error(err) -> 
+  case process_root_request(conn) {
+    Ok(ApiResponse(data: data, status: status)) -> {
       wisp.json_response(
-        json.to_string_builder(json.object([
-          #("error", json.string(err))
-        ])),
-        500
+        json.to_string_builder(encode_root_data(data)),
+        status,
       )
+    }
+    Error(error) -> {
+      let #(status, message) = error_response(error)
+      wisp.json_response(
+        json.to_string_builder(encode_error(message)),
+        status,
+      )
+    }
   }
+}
+
+fn process_root_request(conn: pgo.Connection) -> Result(ApiResponse(RootData), AppError) {
+  use #(uuid, count) <- result.try(
+    database.add_entry_and_get_count(conn)
+    |> result.map_error(DatabaseError)
+  )
+  
+  use #(latest_uuid, timestamp) <- result.try(
+    database.get_latest_entry(conn)
+    |> result.map_error(DatabaseError)
+  )
+
+  let data = RootData(
+    message: "This is a simple, basic Gleam / Wisp application running on Zerops.io, each request adds an entry to the PostgreSQL database and returns a count.",
+    new_entry: uuid,
+    latest_entry: LatestEntry(uuid: latest_uuid, timestamp: timestamp),
+    count: count,
+  )
+
+  Ok(ApiResponse(data: data, status: 201))
 }
 
 fn handle_status() -> Response {
   wisp.json_response(
-    json.to_string_builder(json.object([
-      #("status", json.string("UP"))
-    ])),
-    200
+    json.to_string_builder(encode_status_response()),
+    200,
   )
+}
+
+// JSON encoders
+fn encode_root_data(data: RootData) -> json.Json {
+  json.object([
+    #("message", json.string(data.message)),
+    #("newEntry", json.string(data.new_entry)),
+    #("latestEntry", json.object([
+      #("uuid", json.string(data.latest_entry.uuid)),
+      #("timestamp", json.string(data.latest_entry.timestamp)),
+    ])),
+    #("count", json.int(data.count)),
+  ])
+}
+
+fn encode_status_response() -> json.Json {
+  json.object([#("status", json.string("UP"))])
+}
+
+fn encode_error(message: String) -> json.Json {
+  json.object([#("error", json.string(message))])
+}
+
+fn error_response(error: AppError) -> #(Int, String) {
+  case error {
+    ConfigError(msg) -> #(500, "Configuration error: " <> msg)
+    DatabaseError(msg) -> #(500, "Database error: " <> msg)
+    ServerError(msg) -> #(500, "Server error: " <> msg)
+  }
 }
