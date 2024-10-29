@@ -27,15 +27,7 @@ pub type RootData {
   RootData(
     message: String,
     new_entry: String,
-    latest_entry: LatestEntry,
     count: Int,
-  )
-}
-
-pub type LatestEntry {
-  LatestEntry(
-    uuid: String,
-    timestamp: String,
   )
 }
 
@@ -99,15 +91,9 @@ fn process_root_request(conn: pgo.Connection) -> Result(ApiResponse(RootData), A
     |> result.map_error(DatabaseError)
   )
   
-  use #(latest_uuid, timestamp) <- result.try(
-    database.get_latest_entry(conn)
-    |> result.map_error(DatabaseError)
-  )
-
   let data = RootData(
-    message: "This is a simple, basic Gleam / Wisp application running on Zerops.io, each request adds an entry to the PostgreSQL database and returns a count.",
+    message: "This is a simple Gleam application running on Zerops.io, each request adds an entry to the PostgreSQL database and returns a count. See the source repository (https://github.com/zeropsio/recipe-nodejs) for more information.",
     new_entry: uuid,
-    latest_entry: LatestEntry(uuid: latest_uuid, timestamp: timestamp),
     count: count,
   )
 
@@ -121,15 +107,10 @@ fn handle_status() -> Response {
   )
 }
 
-// JSON encoders
 fn encode_root_data(data: RootData) -> json.Json {
   json.object([
     #("message", json.string(data.message)),
     #("newEntry", json.string(data.new_entry)),
-    #("latestEntry", json.object([
-      #("uuid", json.string(data.latest_entry.uuid)),
-      #("timestamp", json.string(data.latest_entry.timestamp)),
-    ])),
     #("count", json.int(data.count)),
   ])
 }

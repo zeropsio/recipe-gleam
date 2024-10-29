@@ -34,40 +34,6 @@ pub fn add_entry_and_get_count(conn: pgo.Connection) -> Result(#(String, Int), S
   }
 }
 
-pub fn get_latest_entry(conn: pgo.Connection) -> Result(#(String, String), String) {
-  let query = "
-    SELECT uuid, created_at::text
-    FROM entries
-    ORDER BY created_at DESC
-    LIMIT 1"
-
-  case pgo.execute(
-    query: query,
-    on: conn,
-    with: [],
-    expecting: fn(row) -> Result(#(String, String), List(dynamic.DecodeError)) {
-      case dynamic.tuple2(
-        dynamic.string,
-        dynamic.string
-      )(row) {
-        Ok(#(uuid, timestamp)) -> Ok(#(uuid, timestamp))
-        Error(errs) -> Error(errs)
-      }
-    }
-  ) {
-    Ok(result) -> {
-      case result.rows {
-        [entry, ..] -> Ok(entry)
-        [] -> Error("No entries found")
-      }
-    }
-    Error(err) -> {
-      let error_message = query_error_to_string(err)
-      Error("Failed to get latest entry: " <> error_message)
-    }
-  }
-}
-
 fn get_count(conn: pgo.Connection) -> Result(Int, String) {
   let count_query = "SELECT COUNT(*) FROM entries"
   io.println("Executing count query: " <> count_query)

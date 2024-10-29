@@ -11,6 +11,7 @@ pub fn get_db_connection() -> Result(pgo.Connection, Nil) {
   
   case env.get_string("DATABASE_URL") {
     Ok(database_url) -> {
+      io.println("Attempting to connect to: " <> database_url)
       case pgo.url_config(database_url) {
         Ok(config) -> {
           let connection = pgo.connect(config)
