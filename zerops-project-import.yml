@@ -1,10 +1,14 @@
 project:
   name: recipe-gleam
+  tags:
+    - zerops-recipe
+    
 services:
-  - hostname: app
+  - hostname: api
     type: gleam@1.5
     enableSubdomainAccess: true
     buildFromGit: https://github.com/zeropsio/recipe-gleam
+    
   - hostname: db
     type: postgresql@16
     mode: NON_HA
