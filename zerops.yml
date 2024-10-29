@@ -3,7 +3,6 @@ zerops:
     build:
       base: gleam@1.5
       buildCommands:
-        - gleam build
         - gleam export erlang-shipment
       deployFiles: build/erlang-shipment/~
     run:
