@@ -81,3 +81,32 @@ fn query_error_to_string(error: pgo.QueryError) -> String {
       "Connection unavailable"
   }
 }
+
+pub fn create_entries_table(conn: pgo.Connection) -> Result(Nil, String) {
+  let create_table_query = "
+    CREATE TABLE IF NOT EXISTS entries (
+      id SERIAL PRIMARY KEY,
+      uuid TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    )
+  "
+  
+  io.println("Creating entries table...")
+  
+  case pgo.execute(
+    query: create_table_query,
+    on: conn,
+    with: [],
+    expecting: dynamic.dynamic
+  ) {
+    Ok(_) -> {
+      io.println("Entries table created successfully")
+      Ok(Nil)
+    }
+    Error(err) -> {
+      let error_message = query_error_to_string(err)
+      io.println("Failed to create entries table: " <> error_message)
+      Error("Failed to create table: " <> error_message)
+    }
+  }
+}

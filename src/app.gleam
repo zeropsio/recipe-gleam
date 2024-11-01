@@ -43,6 +43,7 @@ pub fn main() {
     handler
     |> wisp_mist.handler(secret_key_base)
     |> mist.new
+    |> mist.bind("0.0.0.0")
     |> mist.port(3000)
     |> mist.start_http
 
@@ -53,6 +54,12 @@ fn setup_database() -> Result(pgo.Connection, AppError) {
   use db_conn <- result.try(
     config.get_db_connection()
     |> result.map_error(fn(_) { ConfigError("Database connection failed") })
+  )
+
+  // Create the entries table
+  use _ <- result.try(
+    database.create_entries_table(db_conn)
+    |> result.map_error(fn(err) { DatabaseError(err) })
   )
 
   io.println("✓ Server initialized with database connection")
