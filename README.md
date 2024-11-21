@@ -30,8 +30,7 @@ Base of the recipe is ready for production, the difference comes down to:
 
 Futher things to think about when running more complex, highly available Gleam production apps on Zerops:
 - containers are volatile - use Zerops object storage to store your files
-- use Zerops Redis (KeyDB) for caching, storing sessions and pub/sub messaging
-- use more advanced logging lib, such as [winston](https://github.com/winstonjs/winston)
+- use Zerops Redis (Valkey) for caching, storing sessions and pub/sub messaging
 
 <br/>
 <br/>
